@@ -1,0 +1,84 @@
+#ifndef PHOTO_HPP
+#define PHOTO_HPP
+#include <exception>
+#include <string.h>
+#include <iostream>
+#include <fstream>
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <SDL2/SDL.h>
+
+using namespace std;
+
+class Photo{
+private:
+    Uint16 height;
+    Uint16 width;
+    SDL_Window* window;
+    SDL_Surface* screen;
+    SDL_Color paleta7BW[128];
+    SDL_Color paleta7N[128];
+    SDL_Color paleta7D[128];
+    SDL_Color paleta[(256) * (170)];
+    int ileKolorow;
+public:
+
+    //konstruktor
+    Photo(Uint16 height,Uint16 width,SDL_Window * window,SDL_Surface* screen,int ileKolorow);
+
+    //funckje podstawowe
+    void setPixel(int x, int y, Uint8 R, Uint8 G, Uint8 B);
+    void setPixelSurface(int x, int y, Uint8 R, Uint8 G, Uint8 B);
+    SDL_Color getPixel(int x, int y);
+    SDL_Color getPixelSurface(int x, int y, SDL_Surface *surface);
+    void ladujBMP(char const* nazwa, int x, int y);
+    void czyscEkran(Uint8 R, Uint8 G, Uint8 B);
+
+    //funkcje konwertuj¹ce
+    Uint8 z24RGBdo7RGB(SDL_Color kolor);
+    SDL_Color z7rgbna24RGB(Uint8 kolor7bit);
+    Uint8 z24RGBdo7BW(SDL_Color kolor);
+    Uint8 z24RGBdo7BWwithDithering(SDL_Color kolor);
+    SDL_Color z7BWdo24RGB(Uint8 BW7bit);
+
+    //funckje wykonuj¹ce konwersje
+    void zastosuj24RGBto7RGB();
+    void zastosujBW();
+    void zastosujBWzDitheringiem();
+
+    //funkcja inicjuj¹ca
+    bool init();
+
+    bool porownajKolory(SDL_Color kolor1 , SDL_Color kolor2);
+    int dodajKolor(SDL_Color kolor);
+    int sprawdzKolor(SDL_Color kolor);
+    int liczInicjujKolory();
+
+    //rysowanie palet
+    void rysujPaleteBW(SDL_Color paleta7BW []);
+    void rysujPaleteN(SDL_Color paleta7N []);
+
+
+    //zapis i odczyt obrazu
+    void saveImage7N(bool dithering);
+    void readImage7N();
+
+
+    //funkcje dzia³aj¹ce po naciœniêciu odpowiedniego klawisza
+    void Funkcja1();
+    void Funkcja2();
+    void Funkcja3();
+    void Funkcja4();
+    void Funkcja5();
+    void Funkcja6();
+    void Funkcja7();
+    void Funkcja8();
+    void Funkcja9();
+
+
+};
+
+
+#endif // PHOTO_HPP
+
