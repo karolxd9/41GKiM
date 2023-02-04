@@ -246,14 +246,13 @@ Uint8 Photo::z24RGBdo7BW(SDL_Color kolor){
 
 //funkcja do zastosowania dla całego obrazu(zamiana z 24 RGB do 7 RGB)
 void Photo::zastosuj24RGBto7RGB(){
-    ofstream plik("nowy.bin",ios::binary);
     for(int j=0;j<height/2;j++){
         for(int i=0;i<width/2;i++){
             SDL_Color kolor;
             int kolor2;
             SDL_Color kolor3;
             kolor=getPixel(i,j);
-            plik.write((char*)(&kolor),sizeof(SDL_Color));
+
 
             int R,G,B,nowyR,nowyG,nowyB;
             R=kolor.r;
@@ -274,7 +273,7 @@ void Photo::zastosuj24RGBto7RGB(){
             setPixel(i+width/2,j,R,G,B);
         }
     }
-    plik.close();
+
 }
 
 //funkcja do zastosowania dla całego obrazu(zamiana z 24 RGB do 7 BW)
@@ -442,133 +441,162 @@ void Photo::rysujPaleteN(SDL_Color paleta7N []){
     }
 }
 
-/*
-void Photo::saveImage7N(bool dithering){
+//dodaje dane do nagłówka
+void Photo::dodajNaglowek(ofstream & plik,char id[],Uint16 widthImage,Uint16 heightImage,Uint8 mode,bool compression){
+    plik.open("nowy.bin",ios::binary);
+    plik.write((char*)(&id),sizeof(char)*3);
+    plik.write((char*)(&widthImage),sizeof(Uint16));
+    plik.write((char*)(&heightImage),sizeof(Uint16));
+    plik.write((char*)(&mode),sizeof(Uint8));
+    plik.write((char*)(&compression),sizeof(bool));
+}
+
+int Photo::odczytajNaglowek(ifstream & plik,char id[],Uint16 &widthImage,Uint16 &heightImage,Uint8 &mode,bool &compression){
+
+
+    plik.read((char*)(&id),sizeof(char)*3);
+    plik.read((char*)(&widthImage),sizeof(Uint16));
+    plik.read((char*)(&heightImage),sizeof(Uint16));
+    plik.read((char*)(&mode),sizeof(Uint8));
+    plik.read((char*)(&compression),sizeof(bool));
+
+    cout << "Odczyt obrazka ID: " << id << "\n";
+    cout << "Tryb: " <<         (int)mode << "\n";
+    cout << "Szerokosc: " <<    (int)heightImage << "\n";
+    cout << "Wysokosc: " <<     (int)widthImage << "\n";
+    cout << "kompresja: " <<    (bool)compression << "\n\n";
+
+    return (int)(mode);
+}
+
+void Photo::zapisz7RGBbezRLE(bool dithering){
+    ofstream plik;
+    char id[]="MPS";
+    int R,G,B,r=0,g=0,b=0;
     SDL_Color kolor,nowyKolor;
-    Uint16 heightImage=height/2;
-    Uint16 widthImage=width/2;
-    Uint8 value,mode,compression;
-
-    char id[]="MPS"; //Mordarski Przybycin Soboń
-    ofstream output("img7bit.bin",ios::binary);
-
-    output.write((char*)&id, sizeof(char)*3);
-    if(dithering){
-        mode=3;
-        output.write((char*)&mode,sizeof(Uint8));
-    }
-    else{
-        mode=2;
-        output.write((char*)&mode,sizeof(Uint8));
-    }
-    output.write((char*)&compression,sizeof(Uint8));
-    output.write((char*)&widthImage,sizeof(Uint16));
-    output.write((char*)&heightImage,sizeof(Uint16));
-
-    int R, G, B, r=0, g=0, b=0;
+    int wartosc[(width/2)*(height/2)]{};
+    int licznik=0;
+    dodajNaglowek(plik,id,256,170,2,0);
     float bledyr[(width/2)+2][(height/2)+1];
-    memset(bledyr,0,sizeof(bledyr));
-    int przesuniecier=1;
-    float bladr=0;
-
     float bledyg[(width/2)+2][(height/2)+1];
-    memset(bledyg,0,sizeof(bledyg));
-    int przesuniecieg=1;
-    float bladg=0;
-
     float bledyb[(width/2)+2][(height/2)+1];
+
+    memset(bledyr,0,sizeof(bledyr));
+    memset(bledyg,0,sizeof(bledyg));
     memset(bledyb,0,sizeof(bledyb));
-    int przesuniecieb=1;
+
+    float bladr=0;
+    float bladg=0;
     float bladb=0;
+    int przesuniecier=1;
+    int przesuniecieg=1;
+    int przesuniecieb=1;
 
-    Uint8 toCompression[heightImage*widthImage];
-    int xx=0;
-    //zbieranie danych o obrazku
-
-    for(int j=0;j<heightImage;j++){
-        for(int i=0;i< widthImage;i++){
+    for(int j=0;j<height/2;j++){
+        for(int i=0;i<width/2;i++){
             kolor=getPixel(i,j);
+
             if(dithering){
-                    R=kolor.r;
-                    G=kolor.g;
-                    B=kolor.b;
+                R=kolor.r;
+                G=kolor.g;
+                B=kolor.b;
 
-                    R+=bledyr[i+przesuniecier][j];
-                    G+=bledyg[i+przesuniecieg][j];
-                    B+=bledyb[i+przesuniecieb][j];
+                R+=bledyr[i+przesuniecier][j];
+                G+=bledyg[i+przesuniecieg][j];
+                B+=bledyb[i+przesuniecieb][j];
 
-                    if (R > 255) {
-                        R = 255;
-                    }
-                    else if ( R < 0 ) {
-                        R = 0;
-                    }
+                if (R > 255) {
+                    R = 255;
+                }
+                else if ( R < 0 ) {
+                    R = 0;
+                }
 
-                    if (G > 255) {
-                        G = 255;
-                    }
-                    else if ( G < 0 ) {
-                        G = 0;
-                    }
+                if (G > 255) {
+                    G = 255;
+                }
+                else if ( G < 0 ) {
+                    G = 0;
+                }
 
-                    if (B > 255) {
-                        B = 255;
-                    }
-                    else if ( B < 0 ) {
-                        B = 0;
-                    }
+                if (B > 255) {
+                    B = 255;
+                }
+                else if ( B < 0 ) {
+                    B = 0;
+                }
 
-                    bledyr = R - z7rgbna24RGB(z24RGBdo7RGB({R,G,B})).r;
-                    bledyg = G - z7rgbna24RGB(z24RGBdo7RGB({R,G,B})).g;
-                    bledyb = B - z7rgbna24RGB(z24RGBdo7RGB({R,G,B})).b;
+                bladr = R - z7rgbna24RGB(z24RGBdo7RGB({R,G,B})).r;
+                bladg = G - z7rgbna24RGB(z24RGBdo7RGB({R,G,B})).g;
+                bladb = B - z7rgbna24RGB(z24RGBdo7RGB({R,G,B})).b;
 
-                    nowyKolor.r=R;
-                    nowyKolor.g=G;
-                    nowyKolor.b=B;
+                nowyKolor.r=R;
+                nowyKolor.g=G;
+                nowyKolor.b=B;
 
-                    bledyr[i+przesuniecier+1][j]+=bladr*7.0/16.0;
-                    bledyr[i+przesuniecier+1][j+1]+=bladr*1.0/16.0;
-                    bledyr[i+przesuniecier][j+1]+=bladr*5.0/16.0;
-                    bledyr[i+przesuniecier-1][j+1]+=bladr*3.0/16.0;
+                bledyr[i+przesuniecier+1][j]+=bladr*7.0/16.0;
+                bledyr[i+przesuniecier+1][j+1]+=bladr*1.0/16.0;
+                bledyr[i+przesuniecier][j+1]+=bladr*5.0/16.0;
+                bledyr[i+przesuniecier-1][j+1]+=bladr*3.0/16.0;
 
-                    bledyg[i+przesuniecieg+1][j]+=bladg*7.0/16.0;
-                    bledyg[i+przesuniecieg+1][j+1]+=bladg*1.0/16.0;
-                    bledyg[i+przesuniecieg][j+1]+=bladg*5.0/16.0;
-                    bledyg[i+przesuniecieg-1][j+1]+=bladg*3.0/16.0;
+                bledyg[i+przesuniecieg+1][j]+=bladg*7.0/16.0;
+                bledyg[i+przesuniecieg+1][j+1]+=bladg*1.0/16.0;
+                bledyg[i+przesuniecieg][j+1]+=bladg*5.0/16.0;
+                bledyg[i+przesuniecieg-1][j+1]+=bladg*3.0/16.0;
 
-                    bledyb[i+przesuniecieb+1][j]+=bladb*7.0/16.0;
-                    bledyb[i+przesuniecieb+1][j+1]+=bladb*1.0/16.0;
-                    bledyb[i+przesuniecieb][j+1]+=bladb*5.0/16.0;
-                    bledyb[i+przesuniecieb-1][j+1]+=bladb*3.0/16.0;
+                bledyb[i+przesuniecieb+1][j]+=bladb*7.0/16.0;
+                bledyb[i+przesuniecieb+1][j+1]+=bladb*1.0/16.0;
+                bledyb[i+przesuniecieb][j+1]+=bladb*5.0/16.0;
+                bledyb[i+przesuniecieb-1][j+1]+=bladb*3.0/16.0;
 
-                    value=z24RGBdo7BW(nowyKolor);
+                wartosc[licznik]=z24RGBdo7RGB(nowyKolor);
+
+                licznik++;
+
+
 
             }
             else{
-                    value=z24RGBdo7RGB(kolor);
+                 wartosc[licznik]=(int)(z24RGBdo7RGB(kolor));
+                 licznik++;
             }
-
-            toCompression[xx]=wartosc;
-            xx++;
         }
-
+        for(int i=0;i<170*256;i++){
+            cout<<(int)(wartosc[licznik])<<endl;
+        }
     }
-    int dlugoscTablica2=(widthImage*heightImage)*7/8;
-    Uint8 toCompression2[dlugoscTablica2];
-    kompresja8na7(toCompression2,xx,toCompression2);
-    for(int i=0;i<dlugoscTablica2;i++){
-        output.write((char*)&toCompression2[i],sizeof(Uint8));
+    plik.close();
+    cout<<"Plik nowy.bin został zapisany 7 RGB"<<endl;
+}
+
+void Photo::odczyt7RGBbezRLE(){
+    int licznik=0;
+    SDL_Color kolor2;
+    Uint8 wartosc[(width/2)*(height/2)];
+    ifstream plik;
+    plik.open("nowy.bin",ios::binary);
+    char id[3];
+    Uint16 widthImage,heightImage;
+    Uint8 mode;
+    bool compression;
+    odczytajNaglowek(plik,id,widthImage,heightImage,mode,compression);
+    for(int j=0;j<height/2;j++){
+        for(int i=0;i<width/2;i++){
+            plik.read((char*)(&wartosc[licznik]), sizeof(int));
+            licznik++;
+            cout<<(int)(wartosc[licznik])<<endl;
+
+        }
     }
 
-    output.close();
 
 }
-*/
 
 //zamiana z 24 bitowej wersji kolorowej do 7 bitowej
 void Photo::Funkcja1() {
     zastosuj24RGBto7RGB();
-
+    zapisz7RGBbezRLE(false);
+    odczyt7RGBbezRLE();
     SDL_UpdateWindowSurface(window);
 }
 //zamiana z 24 RGB na 7 BW

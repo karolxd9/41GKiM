@@ -356,10 +356,10 @@
 	"begin_code.h"
 	"close_code.h"
 
-1675532632 source:n:\projekt gkim\gkim2022-projekt-64 (1)\photoformat\photo.cpp
+1675553680 source:n:\projekt gkim\gkim2022-projekt-64 (1)\photoformat\photo.cpp
 	"photo.hpp"
 
-1675509634 n:\projekt gkim\gkim2022-projekt-64 (1)\photoformat\photo.hpp
+1675554236 n:\projekt gkim\gkim2022-projekt-64 (1)\photoformat\photo.hpp
 	<exception>
 	<string.h>
 	<iostream>

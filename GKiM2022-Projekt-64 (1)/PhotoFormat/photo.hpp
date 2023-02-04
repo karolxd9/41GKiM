@@ -45,10 +45,14 @@ public:
     //funckje wykonuj¹ce konwersje
     void zastosuj24RGBto7RGB();
     void zastosujBW();
+    void zastosuj7D();
     void zastosujBWzDitheringiem();
+    void zastosuj24RGBto7RGBzDitheringiem();
 
     //funkcja inicjuj¹ca
     bool init();
+    void dodajNaglowek(ofstream & plik,char id[],Uint16 widthImage,Uint16 heightImage,Uint8 mode,bool compression);
+    int odczytajNaglowek(ifstream & plik,char id[],Uint16 &widthImage,Uint16 &heightImage,Uint8 &mode,bool &compression);
 
     bool porownajKolory(SDL_Color kolor1 , SDL_Color kolor2);
     int dodajKolor(SDL_Color kolor);
@@ -61,8 +65,12 @@ public:
 
 
     //zapis i odczyt obrazu
-    void saveImage7N(bool dithering);
-    void readImage7N();
+    void zapisz7RGBbezRLE(bool dithering);
+    void zapisz7BWbezRLE(bool dithering);
+    void zapisz7DbezRLE(bool dithering);
+    void odczyt7RGBbezRLE();
+    void odczyt7BWbezRLE();
+    void odczyt7DbezRLE();
 
 
     //funkcje dzia³aj¹ce po naciœniêciu odpowiedniego klawisza
