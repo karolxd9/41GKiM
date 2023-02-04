@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1675453582 source:n:\projekt gkim\gkim2022-projekt-64 (1)\photoformat\photoformat.cpp
+1675533602 source:n:\projekt gkim\gkim2022-projekt-64 (1)\photoformat\photoformat.cpp
 	"photo.hpp"
 
 1583890676 n:\projekt gkim\gkim2022-projekt-64 (1)\photoformat\sdl2\include\sdl2\sdl.h
@@ -356,7 +356,7 @@
 	"begin_code.h"
 	"close_code.h"
 
-1675504684 source:n:\projekt gkim\gkim2022-projekt-64 (1)\photoformat\photo.cpp
+1675532632 source:n:\projekt gkim\gkim2022-projekt-64 (1)\photoformat\photo.cpp
 	"photo.hpp"
 
 1675509634 n:\projekt gkim\gkim2022-projekt-64 (1)\photoformat\photo.hpp

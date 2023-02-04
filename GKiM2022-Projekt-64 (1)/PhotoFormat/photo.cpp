@@ -246,12 +246,14 @@ Uint8 Photo::z24RGBdo7BW(SDL_Color kolor){
 
 //funkcja do zastosowania dla całego obrazu(zamiana z 24 RGB do 7 RGB)
 void Photo::zastosuj24RGBto7RGB(){
+    ofstream plik("nowy.bin",ios::binary);
     for(int j=0;j<height/2;j++){
         for(int i=0;i<width/2;i++){
             SDL_Color kolor;
             int kolor2;
             SDL_Color kolor3;
             kolor=getPixel(i,j);
+            plik.write((char*)(&kolor),sizeof(SDL_Color));
 
             int R,G,B,nowyR,nowyG,nowyB;
             R=kolor.r;
@@ -272,6 +274,7 @@ void Photo::zastosuj24RGBto7RGB(){
             setPixel(i+width/2,j,R,G,B);
         }
     }
+    plik.close();
 }
 
 //funkcja do zastosowania dla całego obrazu(zamiana z 24 RGB do 7 BW)
@@ -422,6 +425,7 @@ int Photo::liczInicjujKolory(){
 
 //rysuje kolory palety odcieni szarości
 void Photo::rysujPaleteBW(SDL_Color paleta7BW []){
+
     for(int i=0;i<128;i++){
         for(int j=width/2;j<width;j++){
             setPixel(j,i,paleta7BW[i].r,paleta7BW[i].g,paleta7BW[i].b);
@@ -564,6 +568,7 @@ void Photo::saveImage7N(bool dithering){
 //zamiana z 24 bitowej wersji kolorowej do 7 bitowej
 void Photo::Funkcja1() {
     zastosuj24RGBto7RGB();
+
     SDL_UpdateWindowSurface(window);
 }
 //zamiana z 24 RGB na 7 BW
