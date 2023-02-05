@@ -1,5 +1,11 @@
 #include "photo.hpp"
 
+Uint8 obrazekRGB[170*256]{};
+Uint8 dekompresjaRGB[230*306]{};
+Uint8 wynik[170*256]{};
+int ileRGB=0;
+int ilebajtow=0;
+
 // konstruktor funkcji Photo
 Photo::Photo(Uint16 height,Uint16 width,SDL_Window * window,SDL_Surface* screen,int ileKolorow){
     this->height=height;
@@ -7,6 +13,7 @@ Photo::Photo(Uint16 height,Uint16 width,SDL_Window * window,SDL_Surface* screen,
     this->window=NULL;
     this->screen=NULL;
     this->ileKolorow=ileKolorow;
+
 }
 
 //ustawianie koloru dnaego Pixela
@@ -290,9 +297,9 @@ void Photo::zastosujBW(){
             setPixel(i+width/2,j,kolor2,kolor2,kolor2);
 
 
-            SDL_Color kolor3;
-            kolor3=z7BWdo24RGB(kolor2);
-            setPixel(i,j+height/2,kolor3.r,kolor3.g,kolor3.b);
+            SDL_Color kolor7;
+            kolor7=z7BWdo24RGB(kolor2);
+            setPixel(i,j+height/2,kolor7.r,kolor7.g,kolor7.b);
 
         }
     }
@@ -391,10 +398,11 @@ int Photo::sprawdzKolor(SDL_Color kolor)
 }
 
 //inicjacja odpowiedniej palety, zwraca liczbę różnych kolorów na obrazie
-int Photo::liczInicjujKolory(){
+int Photo::liczInicjujKolory(SDL_Color paleta[]){
     ileKolorow = 0;
     SDL_Color kolor;
     int nrKoloru = 0;
+
 
     for(int j = 0; j<width/2; j++)
     {
@@ -466,6 +474,7 @@ int Photo::odczytajNaglowek(ifstream & plik,char id[],Uint16 &widthImage,Uint16 
 
     return (int)(mode);
 }
+
 
 void Photo::zapisz7RGBbezRLE(bool dithering){
     ofstream plik("nowy.bin",ios::binary);
@@ -636,6 +645,143 @@ void Photo::odczyt7BWbezRLE(){
     plik.close();
 }
 
+void Photo::zbierajKolory(){
+    for(int j=0;j<height/2;j++){
+        for(int i=0;i<width/2;i++){
+            obrazekRGB[ileRGB]=z24RGBdo7RGB(getPixel(i,j));
+            ileRGB++;
+        }
+    }
+}
+
+bool Photo::czyRGBRLE(){
+    int bajty=0;
+    int ile=0;
+    int przerwania=0;
+    int obecnyLicznik=1;
+    int niepowtarzalne=1;
+    for(int i=0;i<ileRGB-1;i++){
+        if(obrazekRGB[i]==obrazekRGB[i+1]){
+            obecnyLicznik++;
+            ile++;
+        }
+        else{
+            bajty+=2;
+            obecnyLicznik=1;
+            przerwania++;
+        }
+    }
+    bajty+=((przerwania)+(ileRGB-ile));
+
+
+    cout<<bajty<<"\n";
+    cout<<ileRGB<<"\n";
+
+    if(bajty<ileRGB) return true;
+    return false;
+}
+
+void Photo::RGBRLE(){
+    ofstream plik("nowyRLE.bin",ios::binary);
+    char *id="MPS";
+    dodajNaglowek(plik,id,256,170,2,1);
+    int i=0;
+
+    int dlugosc=ileRGB;
+    Uint8 wartosc;
+    while(i<ileRGB){
+        if((i<dlugosc-1) && (obrazekRGB[i]==obrazekRGB[i+1])){
+            Uint8 licznik=0;
+            while((i+licznik<dlugosc-1) &&
+                  (obrazekRGB[i+licznik] == obrazekRGB[i]) &&
+            (licznik<254)){
+                licznik++;
+            }
+
+
+
+        wartosc=licznik+1;
+        plik.write((char*)(&wartosc),sizeof(Uint8));
+        wartosc=obrazekRGB[i];
+        plik.write((char*)(&wartosc),sizeof(Uint8));
+        ilebajtow+=2;
+        i+=(licznik+1);
+        }
+        else{
+            int licznik=0;
+            while((i<dlugosc-1) &&
+                  (licznik<254) &&
+                  (obrazekRGB[i+licznik]!=obrazekRGB[i+licznik+1])){
+                    licznik++;
+                  }
+            if((i+licznik) == (dlugosc-1)&&(licznik<254)){
+                licznik++;
+            }
+            wartosc=0;
+            plik.write((char*)&wartosc,sizeof(Uint8));
+            wartosc=licznik;
+            plik.write((char*)&wartosc,sizeof(Uint8));
+            ilebajtow+=2;
+            for(int k=0;k<licznik;k++){
+                wartosc=obrazekRGB[i+k];
+                plik.write((char*)&wartosc,sizeof(Uint8));
+                ilebajtow+=1;
+            }
+            if(licznik%2 != 0){
+                wartosc=0;
+                plik.write((char*)(&wartosc),sizeof(Uint8));
+                ilebajtow+=1;
+            }
+            i+=licznik;
+        }
+    }
+    plik.close();
+}
+
+void Photo::dekompresjaRGBRLE(){
+    int i=0,counter=0;
+    ifstream plik;
+    plik.open("nowyRLE.bin",ios::binary);
+    char id[3];
+    Uint16 widthImage;
+    Uint16 heightImage;
+    Uint8 mode;
+    bool compression;
+    odczytajNaglowek(plik,id,widthImage,heightImage,mode,compression);
+    int mainCounter=0,j=0;
+    while(!plik.eof()){
+        plik.read((char*)(&dekompresjaRGB[j]),sizeof(Uint8));
+        j++;
+        mainCounter++;
+    }
+
+    while(i<mainCounter){
+        if(dekompresjaRGB[i]>0){
+            for(int licznik=0;licznik<dekompresjaRGB[i];licznik++)
+            {
+                wynik[counter]=dekompresjaRGB[i+1];
+                counter++;
+            }
+
+            i+=2;
+        }
+        else{
+            int ile=dekompresjaRGB[i+1];
+            for(int licznik=0;licznik<ile;licznik++){
+                wynik[counter]=dekompresjaRGB[i+1+1+licznik];
+                counter++;
+            }
+            i+=ile+2;
+            if(ile%2!=0){
+                i++;
+            }
+        }
+    }
+    plik.close();
+
+
+
+}
 
 //zamiana z 24 bitowej wersji kolorowej do 7 bitowej
 void Photo::Funkcja1() {
@@ -650,10 +796,26 @@ void Photo::Funkcja2() {
     SDL_UpdateWindowSurface(window);
 }
 
-//zamiana na obraz z kolorów palety dedykowanej
 void Photo::Funkcja3() {
-    cout<<liczInicjujKolory()<<endl;
-    rysujPaleteBW(paleta7BW);
+    zbierajKolory();
+    //cout<<czyRGBRLE()<<"\n";
+
+    if(czyRGBRLE()){
+        RGBRLE();
+        dekompresjaRGBRLE();
+        int counter2=0;
+        for(int y=0;y<height/2;y++){
+        for(int x=0;x<width/2;x++){
+            //setPixel(x+width/2,y,(int)z7rgbna24RGB(wynik[counter2]).r,(int)z7rgbna24RGB(wynik[counter2]).g,(int)z7rgbna24RGB(wynik[counter2]).b);
+            setPixel(x+256,y,(Uint8)(z7rgbna24RGB((Uint8)(wynik[counter2])).r),(Uint8)(z7rgbna24RGB((Uint8)(wynik[counter2])).g),(Uint8)(z7rgbna24RGB((Uint8)(wynik[counter2])).b));
+            counter2++;
+        }
+        }
+    }
+    else{
+        cout<<"Jest to nieoplacalne"<<" \n";
+    }
+    SDL_UpdateWindowSurface(window);
 }
 
 void Photo::Funkcja4() {

@@ -11,6 +11,8 @@
 
 using namespace std;
 
+
+
 class Photo{
 private:
     Uint16 height;
@@ -22,6 +24,7 @@ private:
     SDL_Color paleta7D[128];
     SDL_Color paleta[(256) * (170)];
     int ileKolorow;
+
 public:
 
     //konstruktor
@@ -42,6 +45,7 @@ public:
     Uint8 z24RGBdo7BWwithDithering(SDL_Color kolor);
     SDL_Color z7BWdo24RGB(Uint8 BW7bit);
 
+
     //funckje wykonuj¹ce konwersje
     void zastosuj24RGBto7RGB();
     void zastosujBW();
@@ -57,11 +61,21 @@ public:
     bool porownajKolory(SDL_Color kolor1 , SDL_Color kolor2);
     int dodajKolor(SDL_Color kolor);
     int sprawdzKolor(SDL_Color kolor);
-    int liczInicjujKolory();
+    int liczInicjujKolory(SDL_Color paleta[]);
+    void stworzDedykowana(SDL_Color paleta7D[]);
+    void zbierajKolory();
+
+    //do palety dedykowanej
+    void medianCutRGB(int start, int koniec, int iteracja);
+    int najwiekszaRoznica(int start, int koniec);
+    void sortujKubelekRGB(int start, int koniec, int ktoraSkladowa);
+    void narysujObrazekRGB(int px, int py, SDL_Color paleta[]);
+    int znajdzSasiadaRGB(SDL_Color kolor, SDL_Color paleta[]);
 
     //rysowanie palet
     void rysujPaleteBW(SDL_Color paleta7BW []);
     void rysujPaleteN(SDL_Color paleta7N []);
+    void rysujPaleteD(SDL_Color paleta7D []);
 
 
     //zapis i odczyt obrazu
@@ -71,6 +85,11 @@ public:
     void odczyt7RGBbezRLE();
     void odczyt7BWbezRLE();
     void odczyt7DbezRLE();
+
+    //kompresja
+    bool czyRGBRLE();
+    void RGBRLE();
+    void dekompresjaRGBRLE();
 
 
     //funkcje dzia³aj¹ce po naciœniêciu odpowiedniego klawisza
