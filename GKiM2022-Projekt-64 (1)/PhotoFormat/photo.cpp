@@ -550,20 +550,15 @@ void Photo::zapisz7RGBbezRLE(bool dithering){
                 bledyb[i+przesuniecieb-1][j+1]+=bladb*3.0/16.0;
 
                 wartosc[licznik]=z24RGBdo7RGB(nowyKolor);
-
+                plik.write((char*)(&wartosc[licznik]),sizeof(int));
                 licznik++;
-                //kom
-
-
 
             }
             else{
                  wartosc[licznik]=(int)(z24RGBdo7RGB(kolor));
+                 plik.write((char*)(&wartosc[licznik]),sizeof(int));
                  licznik++;
             }
-        }
-        for(int i=0;i<170*256;i++){
-            cout<<(int)(wartosc[licznik])<<endl;
         }
     }
     plik.close();
@@ -576,7 +571,7 @@ void Photo::odczyt7RGBbezRLE(){
     Uint8 wartosc[(width/2)*(height/2)];
     ifstream plik;
     plik.open("nowy.bin",ios::binary);
-    char id[3];
+    char *id;
     Uint16 widthImage,heightImage;
     Uint8 mode;
     bool compression;
@@ -584,9 +579,9 @@ void Photo::odczyt7RGBbezRLE(){
     for(int j=0;j<height/2;j++){
         for(int i=0;i<width/2;i++){
             plik.read((char*)(&wartosc[licznik]), sizeof(int));
+            kolor2=z7rgbna24RGB(wartosc[licznik]);
             licznik++;
-            cout<<(int)(wartosc[licznik])<<endl;
-
+            setPixel(i,j+height/2,kolor2.r,kolor2.g,kolor2.b);
         }
     }
 
