@@ -552,6 +552,7 @@ void Photo::zapisz7RGBbezRLE(bool dithering){
                 wartosc[licznik]=z24RGBdo7RGB(nowyKolor);
 
                 licznik++;
+                //kom
 
 
 
