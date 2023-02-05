@@ -590,6 +590,50 @@ void Photo::odczyt7RGBbezRLE(){
 
 }
 
+void Photo::zapisz7BWbezRLE(bool dithering){
+    ofstream plik("nowy7BW.bin",ios::binary);
+    char id[]="MPS";
+    dodajNaglowek(plik,id,width/2,height/2,3,0);
+    float bledy[(width/2)+2][(height/2)+1];
+    memset(bledy,0,sizeof(bledy));
+    float blad=0;
+    int przesuniecie=1;
+    SDL_Color kolor;
+    int BW[(width/2)*(height/2)]{},bw;
+    int licznik=0;
+    for(int j=0;j<height/2;j++){
+        for(int i=0;i<width/2;i++){
+            kolor=getPixel(i,j);
+
+            if(dithering){
+                bw=z24RGBdo7BW(kolor);
+                bw+=(int)(bledy[i+przesuniecie][j]);
+                if(bw>255){
+                    bw=255;
+                }
+                else if(bw<0){
+                    bw=0;
+                }
+                blad=bw-z24RGBdo7BW(kolor);
+                bledy[i+przesuniecie+1][j]+=blad*7.0/16.0;
+                bledy[i+przesuniecie+1][j+1]+=blad*1.0/16.0;
+                bledy[i+przesuniecie][j+1]+=blad*5.0/16.0;
+                bledy[i+przesuniecie-1][j+1]+=blad*3.0/16.0;
+
+            }
+            else{
+                BW[licznik]=z24RGBdo7BW(kolor);
+                plik.write((char*)(&BW[licznik]),sizeof(int));
+                licznik++;
+            }
+            przesuniecie++;
+        }
+    }
+    plik.close();
+}
+
+
+
 //zamiana z 24 bitowej wersji kolorowej do 7 bitowej
 void Photo::Funkcja1() {
     zapisz7RGBbezRLE(true);
@@ -598,8 +642,8 @@ void Photo::Funkcja1() {
 }
 //zamiana z 24 RGB na 7 BW
 void Photo::Funkcja2() {
-    zastosujBW();
-    //zastosujBWzDitheringiem();
+    zapisz7BWbezRLE(false);
+
     SDL_UpdateWindowSurface(window);
 }
 

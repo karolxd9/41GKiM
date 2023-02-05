@@ -65,8 +65,8 @@ public:
 
 
     //zapis i odczyt obrazu
-    void zapisz7RGBbezRLE(bool dithering);
-    void zapisz7BWbezRLE(bool dithering);
+    void zapisz7RGBbezRLE(bool dithering); //tryb 2
+    void zapisz7BWbezRLE(bool dithering); //tryb 3
     void zapisz7DbezRLE(bool dithering);
     void odczyt7RGBbezRLE();
     void odczyt7BWbezRLE();
