@@ -210,11 +210,11 @@ Uint8 Photo::z24RGBdo7RGB(SDL_Color kolor){
     G=kolor.g;
     B=kolor.b;
 
-    r=R>>3;
-    g=G>>3;
-    b=B>>2;
+    r=R>>6;
+    g=G>>5;
+    b=B>>6;
 
-    kolor7bit=r+g+b;
+    kolor7bit=(r<<5)+(g<<2)+(b);
 
     return kolor7bit;
 }
@@ -222,9 +222,9 @@ Uint8 Photo::z24RGBdo7RGB(SDL_Color kolor){
 // powrót z 7 bitowej wersji RGB do 24 bitowej wartości
 SDL_Color Photo::z7rgbna24RGB(Uint8 kolor7bit){
     SDL_Color kolor;
-    kolor.r=(kolor7bit & 0b1110000);
-    kolor.g=(kolor7bit & 0b0001100)<<3;
-    kolor.b=(kolor7bit & 0b0000011)<<5;
+    kolor.r=(kolor7bit & 0b01100000)<<1;
+    kolor.g=(kolor7bit & 0b00011100)<<3;
+    kolor.b=(kolor7bit & 0b00000011)<<6;
 
     return kolor;
 }
@@ -571,7 +571,7 @@ void Photo::odczyt7RGBbezRLE(){
     Uint8 wartosc[(width/2)*(height/2)];
     ifstream plik;
     plik.open("nowy.bin",ios::binary);
-    char *id;
+    char id[3];
     Uint16 widthImage,heightImage;
     Uint8 mode;
     bool compression;
@@ -582,16 +582,17 @@ void Photo::odczyt7RGBbezRLE(){
             kolor2=z7rgbna24RGB(wartosc[licznik]);
             licznik++;
             setPixel(i,j+height/2,kolor2.r,kolor2.g,kolor2.b);
+            //cout<<(int)(kolor2.r)<<" "<<(int)(kolor2.g)<<" "<<(int)(kolor2.b)<<"\n";
         }
     }
+    plik.close();
 
 
 }
 
 //zamiana z 24 bitowej wersji kolorowej do 7 bitowej
 void Photo::Funkcja1() {
-    zastosuj24RGBto7RGB();
-    zapisz7RGBbezRLE(false);
+    zapisz7RGBbezRLE(true);
     odczyt7RGBbezRLE();
     SDL_UpdateWindowSurface(window);
 }
