@@ -443,7 +443,6 @@ void Photo::rysujPaleteN(SDL_Color paleta7N []){
 
 //dodaje dane do nagłówka
 void Photo::dodajNaglowek(ofstream & plik,char id[],Uint16 widthImage,Uint16 heightImage,Uint8 mode,bool compression){
-    plik.open("nowy.bin",ios::binary);
     plik.write((char*)(&id),sizeof(char)*3);
     plik.write((char*)(&widthImage),sizeof(Uint16));
     plik.write((char*)(&heightImage),sizeof(Uint16));
@@ -452,7 +451,6 @@ void Photo::dodajNaglowek(ofstream & plik,char id[],Uint16 widthImage,Uint16 hei
 }
 
 int Photo::odczytajNaglowek(ifstream & plik,char id[],Uint16 &widthImage,Uint16 &heightImage,Uint8 &mode,bool &compression){
-
 
     plik.read((char*)(&id),sizeof(char)*3);
     plik.read((char*)(&widthImage),sizeof(Uint16));
@@ -470,13 +468,13 @@ int Photo::odczytajNaglowek(ifstream & plik,char id[],Uint16 &widthImage,Uint16 
 }
 
 void Photo::zapisz7RGBbezRLE(bool dithering){
-    ofstream plik;
+    ofstream plik("nowy.bin",ios::binary);
     char id[]="MPS";
     int R,G,B,r=0,g=0,b=0;
     SDL_Color kolor,nowyKolor;
     int wartosc[(width/2)*(height/2)]{};
     int licznik=0;
-    dodajNaglowek(plik,id,256,170,2,0);
+    dodajNaglowek(plik,id,256,170,3,0);
     float bledyr[(width/2)+2][(height/2)+1];
     float bledyg[(width/2)+2][(height/2)+1];
     float bledyb[(width/2)+2][(height/2)+1];
@@ -569,8 +567,7 @@ void Photo::odczyt7RGBbezRLE(){
     int licznik=0;
     SDL_Color kolor2;
     Uint8 wartosc[(width/2)*(height/2)];
-    ifstream plik;
-    plik.open("nowy.bin",ios::binary);
+    ifstream plik("nowy.bin",ios::binary);
     char id[3];
     Uint16 widthImage,heightImage;
     Uint8 mode;
@@ -581,8 +578,8 @@ void Photo::odczyt7RGBbezRLE(){
             plik.read((char*)(&wartosc[licznik]), sizeof(int));
             kolor2=z7rgbna24RGB(wartosc[licznik]);
             licznik++;
-            setPixel(i,j+height/2,kolor2.r,kolor2.g,kolor2.b);
             //cout<<(int)(kolor2.r)<<" "<<(int)(kolor2.g)<<" "<<(int)(kolor2.b)<<"\n";
+            setPixel(i,j+height/2,kolor2.r,kolor2.g,kolor2.b);
         }
     }
     plik.close();
@@ -593,45 +590,51 @@ void Photo::odczyt7RGBbezRLE(){
 void Photo::zapisz7BWbezRLE(bool dithering){
     ofstream plik("nowy7BW.bin",ios::binary);
     char id[]="MPS";
-    dodajNaglowek(plik,id,width/2,height/2,3,0);
+
     float bledy[(width/2)+2][(height/2)+1];
     memset(bledy,0,sizeof(bledy));
     float blad=0;
     int przesuniecie=1;
     SDL_Color kolor;
     int BW[(width/2)*(height/2)]{},bw;
-    int licznik=0;
+    int licznik=0,R,G,B;
+    dodajNaglowek(plik,id,256,170,3,false);
     for(int j=0;j<height/2;j++){
         for(int i=0;i<width/2;i++){
             kolor=getPixel(i,j);
+            R=kolor.r;
+            G=kolor.g;
+            B=kolor.b;
 
-            if(dithering){
-                bw=z24RGBdo7BW(kolor);
-                bw+=(int)(bledy[i+przesuniecie][j]);
-                if(bw>255){
-                    bw=255;
-                }
-                else if(bw<0){
-                    bw=0;
-                }
-                blad=bw-z24RGBdo7BW(kolor);
-                bledy[i+przesuniecie+1][j]+=blad*7.0/16.0;
-                bledy[i+przesuniecie+1][j+1]+=blad*1.0/16.0;
-                bledy[i+przesuniecie][j+1]+=blad*5.0/16.0;
-                bledy[i+przesuniecie-1][j+1]+=blad*3.0/16.0;
+            BW[licznik]=(int)(0.299*R+0.587*G+0.114*B);
+            plik.write((char*)(&BW[licznik]),sizeof(Uint8));
+            licznik++;
 
-            }
-            else{
-                BW[licznik]=z24RGBdo7BW(kolor);
-                plik.write((char*)(&BW[licznik]),sizeof(int));
-                licznik++;
-            }
-            przesuniecie++;
         }
     }
     plik.close();
 }
 
+void Photo::odczyt7BWbezRLE(){
+    int licznik=0;
+    SDL_Color kolor;
+    Uint8 BW[(width/2)*(height/2)];
+    ifstream plik("nowy7BW.bin",ios::binary);
+    char id[3];
+    Uint16 widthImage,heightImage;
+    Uint8 mode;
+    bool compression;
+    odczytajNaglowek(plik,id,widthImage,heightImage,mode,compression);
+    for(int j=0;j<height/2;j++){
+        for(int i=0;i<width/2;i++){
+            plik.read((char*)(&BW[licznik]), sizeof(Uint8));
+            setPixel(i,j+heightImage,BW[licznik],BW[licznik],BW[licznik]);
+            licznik++;
+
+        }
+    }
+    plik.close();
+}
 
 
 //zamiana z 24 bitowej wersji kolorowej do 7 bitowej
@@ -642,8 +645,8 @@ void Photo::Funkcja1() {
 }
 //zamiana z 24 RGB na 7 BW
 void Photo::Funkcja2() {
-    zapisz7BWbezRLE(false);
-
+    zapisz7BWbezRLE(true);
+    odczyt7BWbezRLE();
     SDL_UpdateWindowSurface(window);
 }
 
