@@ -3,7 +3,11 @@
 Uint8 obrazekRGB[170*256]{};
 Uint8 dekompresjaRGB[230*306]{};
 Uint8 wynik[170*256]{};
+Uint8 obrazekBW[170*256];
+Uint8 dekompresjaBW[230*306];
+Uint8 wynikBW[170*256];
 int ileRGB=0;
+int ileBW=0;
 int ilebajtow=0;
 
 // konstruktor funkcji Photo
@@ -339,7 +343,7 @@ void Photo::zastosujBWzDitheringiem(){
             BW = z24RGBdo7BW(noweBW);
             nowyKolor = z7BWdo24RGB(BW);
 
-            setPixel(i+width/2, j , nowyKolor.r , nowyKolor.g , nowyKolor.b);
+            setPixel(i, j+height/2 , nowyKolor.r , nowyKolor.g , nowyKolor.b);
         }
     }
 
@@ -783,6 +787,141 @@ void Photo::dekompresjaRGBRLE(){
 
 }
 
+void Photo::zbierajKoloryBW(){
+    for(int j=0;j<height/2;j++){
+        for(int i=0;i<width/2;i++){
+            obrazekBW[ileBW]=z24RGBdo7BW(getPixel(i,j));
+            ileBW++;
+        }
+    }
+}
+
+bool Photo::czyBWRGB(){
+    int bajty=0;
+    int ile=0;
+    int przerwania=0;
+    int obecnyLicznik=1;
+    int niepowtarzalne=1;
+    for(int i=0;i<ileBW-1;i++){
+        if(obrazekBW[i]==obrazekBW[i+1]){
+            obecnyLicznik++;
+            ile++;
+        }
+        else{
+            bajty+=2;
+            obecnyLicznik=1;
+            przerwania++;
+        }
+    }
+    bajty+=((przerwania)+(ileBW-ile));
+
+
+    cout<<bajty<<"\n";
+    cout<<ileBW<<"\n";
+
+    if(bajty<ileBW) return true;
+    return false;
+}
+
+void Photo::BWRLE(){
+    ofstream plik("nowyBWRLE.bin",ios::binary);
+    char *id="MPS";
+    dodajNaglowek(plik,id,256,170,3,1);
+    int i=0;
+
+    int dlugosc=ileBW;
+    Uint8 wartosc;
+    while(i<ileBW){
+        if((i<dlugosc-1) && (obrazekBW[i]==obrazekBW[i+1])){
+            Uint8 licznik=0;
+            while((i+licznik<dlugosc-1) &&
+                  (obrazekBW[i+licznik] == obrazekBW[i]) &&
+            (licznik<254)){
+                licznik++;
+            }
+
+
+
+        wartosc=licznik+1;
+        plik.write((char*)(&wartosc),sizeof(Uint8));
+        wartosc=obrazekBW[i];
+        plik.write((char*)(&wartosc),sizeof(Uint8));
+        ilebajtow+=2;
+        i+=(licznik+1);
+        }
+        else{
+            int licznik=0;
+            while((i<dlugosc-1) &&
+                  (licznik<254) &&
+                  (obrazekBW[i+licznik]!=obrazekBW[i+licznik+1])){
+                    licznik++;
+                  }
+            if((i+licznik) == (dlugosc-1)&&(licznik<254)){
+                licznik++;
+            }
+            wartosc=0;
+            plik.write((char*)&wartosc,sizeof(Uint8));
+            wartosc=licznik;
+            plik.write((char*)&wartosc,sizeof(Uint8));
+            ilebajtow+=2;
+            for(int k=0;k<licznik;k++){
+                wartosc=obrazekBW[i+k];
+                plik.write((char*)&wartosc,sizeof(Uint8));
+                ilebajtow+=1;
+            }
+            if(licznik%2 != 0){
+                wartosc=0;
+                plik.write((char*)(&wartosc),sizeof(Uint8));
+                ilebajtow+=1;
+            }
+            i+=licznik;
+        }
+    }
+    plik.close();
+}
+
+void Photo::dekompresjaBWRLE(){
+    int i=0,counter=0;
+    ifstream plik;
+    plik.open("nowyBWRLE.bin",ios::binary);
+    char id[3];
+    Uint16 widthImage;
+    Uint16 heightImage;
+    Uint8 mode;
+    bool compression;
+    odczytajNaglowek(plik,id,widthImage,heightImage,mode,compression);
+    int mainCounter=0,j=0;
+    while(!plik.eof()){
+        plik.read((char*)(&dekompresjaBW[j]),sizeof(Uint8));
+        j++;
+        mainCounter++;
+    }
+
+    while(i<mainCounter){
+        if(dekompresjaBW[i]>0){
+            for(int licznik=0;licznik<dekompresjaBW[i];licznik++)
+            {
+                wynikBW[counter]=dekompresjaBW[i+1];
+                counter++;
+            }
+
+            i+=2;
+        }
+        else{
+            int ile=dekompresjaBW[i+1];
+            for(int licznik=0;licznik<ile;licznik++){
+                wynikBW[counter]=dekompresjaBW[i+1+1+licznik];
+                counter++;
+            }
+            i+=ile+2;
+            if(ile%2!=0){
+                i++;
+            }
+        }
+    }
+    plik.close();
+}
+
 //zamiana z 24 bitowej wersji kolorowej do 7 bitowej
 void Photo::Funkcja1() {
     zapisz7RGBbezRLE(true);
@@ -806,7 +945,6 @@ void Photo::Funkcja3() {
         int counter2=0;
         for(int y=0;y<height/2;y++){
         for(int x=0;x<width/2;x++){
-            //setPixel(x+width/2,y,(int)z7rgbna24RGB(wynik[counter2]).r,(int)z7rgbna24RGB(wynik[counter2]).g,(int)z7rgbna24RGB(wynik[counter2]).b);
             setPixel(x+256,y,(Uint8)(z7rgbna24RGB((Uint8)(wynik[counter2])).r),(Uint8)(z7rgbna24RGB((Uint8)(wynik[counter2])).g),(Uint8)(z7rgbna24RGB((Uint8)(wynik[counter2])).b));
             counter2++;
         }
@@ -814,12 +952,31 @@ void Photo::Funkcja3() {
     }
     else{
         cout<<"Jest to nieoplacalne"<<" \n";
+        zapisz7RGBbezRLE(true);
+        odczyt7RGBbezRLE();
     }
     SDL_UpdateWindowSurface(window);
 }
 
 void Photo::Funkcja4() {
+    zbierajKoloryBW();
 
+    if(czyBWRGB()){
+        BWRLE();
+        dekompresjaBWRLE();
+        int counter2=0;
+        for(int y=0;y<height/2;y++){
+        for(int x=0;x<width/2;x++){
+            setPixel(x+256,y,(Uint8)(z7BWdo24RGB((Uint8)(wynikBW[counter2])).r),(Uint8)(z7BWdo24RGB((Uint8)(wynikBW[counter2])).g),(Uint8)(z7BWdo24RGB((Uint8)(wynikBW[counter2])).b));
+            counter2++;
+        }
+        }
+    }
+    else{
+        cout<<"Jest to nieoplacalne"<<"\n";
+        zapisz7BWbezRLE(true);
+        odczyt7BWbezRLE();
+    }
     SDL_UpdateWindowSurface(window);
 }
 

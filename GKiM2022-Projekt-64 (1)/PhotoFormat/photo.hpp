@@ -64,6 +64,7 @@ public:
     int liczInicjujKolory(SDL_Color paleta[]);
     void stworzDedykowana(SDL_Color paleta7D[]);
     void zbierajKolory();
+    void zbierajKoloryBW();
 
     //do palety dedykowanej
     void medianCutRGB(int start, int koniec, int iteracja);
@@ -90,6 +91,9 @@ public:
     bool czyRGBRLE();
     void RGBRLE();
     void dekompresjaRGBRLE();
+    bool czyBWRGB();
+    void BWRLE();
+    void dekompresjaBWRLE();
 
 
     //funkcje dzia³aj¹ce po naciœniêciu odpowiedniego klawisza
