@@ -21,7 +21,7 @@ private:
     SDL_Surface* screen;
     SDL_Color paleta7BW[128];
     SDL_Color paleta7N[128];
-    SDL_Color paleta7D[128];
+
     SDL_Color paleta[(256) * (170)];
     int ileKolorow;
 
@@ -64,6 +64,8 @@ public:
     int liczInicjujKolory(SDL_Color paleta[]);
     void stworzDedykowana(SDL_Color paleta7D[]);
     void zbierajKolory();
+    void zbierajKolory2();
+    void zbierajKoloryDithering();
     void zbierajKoloryBW();
 
     //do palety dedykowanej

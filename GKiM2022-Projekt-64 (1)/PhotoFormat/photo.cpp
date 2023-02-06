@@ -1,14 +1,17 @@
 #include "photo.hpp"
 
 Uint8 obrazekRGB[170*256]{};
+SDL_Color obrazekRGB2[170*256];
 Uint8 dekompresjaRGB[230*306]{};
 Uint8 wynik[170*256]{};
 Uint8 obrazekBW[170*256];
 Uint8 dekompresjaBW[230*306];
 Uint8 wynikBW[170*256];
 int ileRGB=0;
+int ileKolorowRGB=0;
 int ileBW=0;
 int ilebajtow=0;
+SDL_Color paleta7D[128]{};
 
 // konstruktor funkcji Photo
 Photo::Photo(Uint16 height,Uint16 width,SDL_Window * window,SDL_Surface* screen,int ileKolorow){
@@ -426,10 +429,13 @@ int Photo::liczInicjujKolory(SDL_Color paleta[]){
         }
     }
 
+
     for (int k=0; k<128; k++) {
             paleta7N[k] = z7rgbna24RGB(k);
             paleta7BW[k] = z7BWdo24RGB(k);
     }
+
+
 
     return this->ileKolorow;
 }
@@ -618,10 +624,27 @@ void Photo::zapisz7BWbezRLE(bool dithering){
             R=kolor.r;
             G=kolor.g;
             B=kolor.b;
+            bw=z24RGBdo7BW(kolor);
+            if(dithering){
+                bw+=bledy[i+przesuniecie][j];
+                if(bw>255){
+                    bw=255;
+                }
+                if(bw<0) bw=0;
+                blad=bw-z24RGBdo7BW(kolor);
 
-            BW[licznik]=(int)(0.299*R+0.587*G+0.114*B);
-            plik.write((char*)(&BW[licznik]),sizeof(Uint8));
-            licznik++;
+            plik.write((char*)(&bw),sizeof(Uint8));
+
+            bledy[i + przesuniecie + 1][j] += blad*7.0/16.0;
+            bledy[i + przesuniecie + 1][j+1] += blad*1.0/16.0;
+            bledy[i + przesuniecie][j+1] += blad*5.0/16.0;
+            bledy[i + przesuniecie - 1][j+1] += blad*3.0/16.0;
+            }
+            else{
+                BW[licznik]=(int)(0.299*R+0.587*G+0.114*B);
+                plik.write((char*)(&BW[licznik]),sizeof(Uint8));
+                licznik++;
+            }
 
         }
     }
@@ -657,6 +680,134 @@ void Photo::zbierajKolory(){
         }
     }
 }
+
+void Photo::zbierajKolory2(){
+    int licznik=0;
+    for(int j=0;j<height/2;j++){
+        for(int i=0;i<width/2;i++){
+            obrazekRGB2[licznik]=getPixel(i,j);
+            licznik++;
+        }
+    }
+}
+int Photo::najwiekszaRoznica(int start, int koniec) {
+    int maxR =obrazekRGB2[start].r, maxG=obrazekRGB2[start].g, maxB=obrazekRGB2[start].b;
+    int minR =obrazekRGB2[start].r, minG =obrazekRGB2[start].g, minB =obrazekRGB2[start].b;
+
+    int roznicaR;
+    int roznicaG;
+    int roznicaB;
+
+    for (int i = start; i < koniec; i++)
+    {
+        if (obrazekRGB2[i].r > maxR) maxR = obrazekRGB2[i].r;
+        if (obrazekRGB2[i].r < minR) minR = obrazekRGB2[i].r;
+
+        if (obrazekRGB2[i].g > maxG) maxG = obrazekRGB2[i].g;
+        if (obrazekRGB2[i].g < minG) minG = obrazekRGB2[i].g;
+
+        if (obrazekRGB2[i].b > maxB) maxB = obrazekRGB2[i].b;
+        if (obrazekRGB2[i].b < minB) minB = obrazekRGB2[i].b;
+    }
+
+    roznicaR = maxR - minR;
+    roznicaG = maxG - minG;
+    roznicaB = maxB - minB;
+
+    // cout << roznicaR << " " << roznicaG << " " << roznicaB ;
+    if (roznicaR > roznicaB && roznicaR > roznicaG) {
+        return 0;
+    }
+    else if (roznicaG > roznicaR && roznicaG > roznicaB) {
+        return 1;
+    }
+    else if (roznicaB > roznicaR && roznicaB > roznicaG){
+        return 2;
+    }
+    else {
+        return 1;
+    }
+}
+void Photo::sortujKubelekRGB(int start, int koniec, int ktoraSkladowa) {
+    int minimum = start;
+    if (ktoraSkladowa == 0) {
+        for (int p=start; p<koniec; p++) {
+        minimum=p;
+        for (int i=p; i<koniec; i++) {
+            if (obrazekRGB2[i].r> obrazekRGB2[minimum].r)
+                minimum=i;
+        }
+        swap(obrazekRGB2[p], obrazekRGB2[minimum]);
+        }
+    }
+
+    if (ktoraSkladowa == 1) {
+        for (int p=start; p<koniec; p++) {
+        minimum=p;
+        for (int i=p; i<koniec; i++) {
+            if (obrazekRGB2[i].g> obrazekRGB2[minimum].g)
+                minimum=i;
+            }
+        swap(obrazekRGB2[p], obrazekRGB2[minimum]);
+        }
+    }
+
+    if (ktoraSkladowa == 2) {
+        for (int p=start; p<koniec; p++) {
+        minimum=p;
+        for (int i=p; i<koniec; i++) {
+            if (obrazekRGB2[i].b> obrazekRGB2[minimum].b)
+                minimum=i;
+            }
+        swap(obrazekRGB2[p], obrazekRGB2[minimum]);
+        }
+    }
+}
+
+void Photo::medianCutRGB(int start,int koniec,int iteracja){
+    if (iteracja > 0) {
+        int ktoraSkladowa =  najwiekszaRoznica(start, koniec);
+        sortujKubelekRGB(start,koniec, ktoraSkladowa);
+
+        // cout << "Dzielimy kubelek na poziomie " <<  iteracja  << endl;
+        int srodek = (start+koniec) /2;
+
+        medianCutRGB(start,srodek, iteracja-1);
+        medianCutRGB(srodek+1,koniec, iteracja-1);
+        // cout << "Zakonczonie podzialu na poziomie " << iteracja << endl;
+    }
+    else {
+        int sumaR =0;
+        int sumaG =0;
+        int sumaB =0;
+
+        for (int p = start; p < koniec; p++)
+        {
+            sumaR += obrazekRGB2[p].r;
+            sumaG += obrazekRGB2[p].g;
+            sumaB += obrazekRGB2[p].b;
+        }
+
+        Uint8 noweR = sumaR / (koniec-start);
+        Uint8 noweG = sumaG / (koniec-start);
+        Uint8 noweB = sumaB / (koniec-start);
+
+        SDL_Color nowyKolor = {noweR, noweG, noweB};
+
+        for (int i = 0; i < ileKolorowRGB; i++)
+        {
+            if (porownajKolory(nowyKolor,paleta7D[i])) {
+                medianCutRGB((start+koniec)/2,koniec -((start+koniec)/2),0);
+                return;
+            }
+        }
+
+        // cout << ileKolorowRGB << ": [" << (int)nowyKolor.r << ", " << (int)nowyKolor.g << ", " << (int)nowyKolor.g << "]" << endl;
+        paleta7D[ileKolorowRGB] = nowyKolor;
+        ileKolorowRGB++;
+}
+}
+
 
 bool Photo::czyRGBRLE(){
     int bajty=0;
@@ -782,6 +933,8 @@ void Photo::dekompresjaRGBRLE(){
         }
     }
     plik.close();
+    int licznik2=0;
+
 
 
 
@@ -924,25 +1077,36 @@ void Photo::dekompresjaBWRLE(){
 
 //zamiana z 24 bitowej wersji kolorowej do 7 bitowej
 void Photo::Funkcja1() {
-    zapisz7RGBbezRLE(true);
+    zapisz7RGBbezRLE(0);
     odczyt7RGBbezRLE();
     SDL_UpdateWindowSurface(window);
 }
 //zamiana z 24 RGB na 7 BW
 void Photo::Funkcja2() {
+    zapisz7RGBbezRLE(1);
+    odczyt7RGBbezRLE();
+    SDL_UpdateWindowSurface(window);
+}
+
+void Photo::Funkcja3() {
+    zapisz7BWbezRLE(0);
+    odczyt7BWbezRLE();
+    SDL_UpdateWindowSurface(window);
+}
+
+void Photo::Funkcja4() {
     zapisz7BWbezRLE(true);
     odczyt7BWbezRLE();
     SDL_UpdateWindowSurface(window);
 }
 
-void Photo::Funkcja3() {
+//rysuj palete
+void Photo::Funkcja5() {
     zbierajKolory();
-    //cout<<czyRGBRLE()<<"\n";
-
+    int counter2=0;
     if(czyRGBRLE()){
         RGBRLE();
         dekompresjaRGBRLE();
-        int counter2=0;
         for(int y=0;y<height/2;y++){
         for(int x=0;x<width/2;x++){
             setPixel(x+256,y,(Uint8)(z7rgbna24RGB((Uint8)(wynik[counter2])).r),(Uint8)(z7rgbna24RGB((Uint8)(wynik[counter2])).g),(Uint8)(z7rgbna24RGB((Uint8)(wynik[counter2])).b));
@@ -951,45 +1115,32 @@ void Photo::Funkcja3() {
         }
     }
     else{
-        cout<<"Jest to nieoplacalne"<<" \n";
-        zapisz7RGBbezRLE(true);
+        cout<<"Nieoplacalne"<<"\n";
+        zapisz7RGBbezRLE(0);
         odczyt7RGBbezRLE();
     }
     SDL_UpdateWindowSurface(window);
 }
 
-void Photo::Funkcja4() {
-    zbierajKoloryBW();
+void Photo::Funkcja6() {
 
+zbierajKoloryBW();
+    int counter2=0;
     if(czyBWRGB()){
         BWRLE();
         dekompresjaBWRLE();
-        int counter2=0;
         for(int y=0;y<height/2;y++){
         for(int x=0;x<width/2;x++){
-            setPixel(x+256,y,(Uint8)(z7BWdo24RGB((Uint8)(wynikBW[counter2])).r),(Uint8)(z7BWdo24RGB((Uint8)(wynikBW[counter2])).g),(Uint8)(z7BWdo24RGB((Uint8)(wynikBW[counter2])).b));
+            setPixel(x+256,y,(Uint8)(wynikBW[counter2]),(Uint8)(wynikBW[counter2]),(Uint8)(wynikBW[counter2]));
             counter2++;
         }
         }
     }
     else{
-        cout<<"Jest to nieoplacalne"<<"\n";
-        zapisz7BWbezRLE(true);
+        cout<<"Nieoplacalne"<<"\n";
+        zapisz7BWbezRLE(0);
         odczyt7BWbezRLE();
     }
-    SDL_UpdateWindowSurface(window);
-}
-
-//rysuj palete
-void Photo::Funkcja5() {
-
-    SDL_UpdateWindowSurface(window);
-}
-
-void Photo::Funkcja6() {
-
-    //...
-
     SDL_UpdateWindowSurface(window);
 }
 
@@ -1009,7 +1160,14 @@ void Photo::Funkcja8() {
 
 void Photo::Funkcja9() {
 
-    //...
+    char wybor;
+    cout<<"Wybierz jedną z opcji: "<<endl;
+    cout<<"1. Zapisz 7RGB i odczytaj(bez RLE)(bez ditehringiem)"<<endl;
+    cout<<"2. Zapisz 7RGB i odczytaj(bez RLE)(z ditehringiem)"<<endl;
+    cout<<"3. Zapisz skala szarosci i odczytaj(bez ditheringu)"<<endl;
+    cout<<"4. Zapisz skala szarosci i odczytaj(z ditheringiem)"<<endl;
+    cout<<"5. Zapisz 7RGB i odczytaj(z RLE w przypadku oplacalnosci)"<<endl;
+    cout<<"6. Zapisz 7BW i odczytaj(z RLE w przypadku oplacalnosci)"<<endl;
 
     SDL_UpdateWindowSurface(window);
 }
