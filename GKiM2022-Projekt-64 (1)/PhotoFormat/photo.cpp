@@ -841,20 +841,16 @@ void Photo::RGBRLE(){
     char *id="MPS";
     dodajNaglowek(plik,id,256,170,2,1);
     int i=0;
-
     int dlugosc=ileRGB;
     Uint8 wartosc;
     while(i<ileRGB){
         if((i<dlugosc-1) && (obrazekRGB[i]==obrazekRGB[i+1])){
             Uint8 licznik=0;
             while((i+licznik<dlugosc-1) &&
-                  (obrazekRGB[i+licznik] == obrazekRGB[i]) &&
+                  (obrazekRGB[i+licznik] == obrazekRGB[i+licznik+1]) &&
             (licznik<254)){
                 licznik++;
             }
-
-
-
         wartosc=licznik+1;
         plik.write((char*)(&wartosc),sizeof(Uint8));
         wartosc=obrazekRGB[i];
@@ -864,7 +860,7 @@ void Photo::RGBRLE(){
         }
         else{
             int licznik=0;
-            while((i<dlugosc-1) &&
+            while((i+licznik<dlugosc-1) &&
                   (licznik<254) &&
                   (obrazekRGB[i+licznik]!=obrazekRGB[i+licznik+1])){
                     licznik++;
@@ -892,6 +888,7 @@ void Photo::RGBRLE(){
     }
     plik.close();
 }
+
 
 void Photo::dekompresjaRGBRLE(){
     int i=0,counter=0;
@@ -988,7 +985,7 @@ void Photo::BWRLE(){
         if((i<dlugosc-1) && (obrazekBW[i]==obrazekBW[i+1])){
             Uint8 licznik=0;
             while((i+licznik<dlugosc-1) &&
-                  (obrazekBW[i+licznik] == obrazekBW[i]) &&
+                  (obrazekBW[i+licznik] == obrazekBW[i+licznik+1]) &&
             (licznik<254)){
                 licznik++;
             }
@@ -1004,7 +1001,7 @@ void Photo::BWRLE(){
         }
         else{
             int licznik=0;
-            while((i<dlugosc-1) &&
+            while((i+licznik<dlugosc-1) &&
                   (licznik<254) &&
                   (obrazekBW[i+licznik]!=obrazekBW[i+licznik+1])){
                     licznik++;
